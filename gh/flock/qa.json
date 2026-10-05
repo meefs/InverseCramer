@@ -1,0 +1,23 @@
+{
+  "P": 150,
+  "ss": 4,
+  "order": [
+    3,
+    2,
+    1,
+    0
+  ],
+  "f_tolerant": 0.9086344155462982,
+  "precision": 0.9152156904670499,
+  "recall": 0.9021471161564041,
+  "iou": 0.6689719227846421,
+  "depth_corr": 0.728777187128168,
+  "gate_f_tolerant": 0.9,
+  "passed": true,
+  "timings_s": {
+    "cell": 0.21,
+    "depth": 0.35,
+    "stereogram": 0.58,
+    "decode": 3.84
+  }
+}
