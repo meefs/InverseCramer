@@ -1,26 +1,28 @@
 name: pages
-# Publishes site/ (films, tile organ, Magic Eye viewer) to GitHub Pages.
+# Syncs site/ to the gh-pages branch, which GitHub Pages serves at https://meefs.github.io/InverseCramer/
 on:
   workflow_dispatch:
   push:
     branches: [claude/wizardly-ritchie-9at5r9]
     paths: [site/**, .github/workflows/pages.yml]
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 concurrency: { group: pages, cancel-in-progress: false }
 jobs:
-  deploy:
+  sync:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-        with: { enablement: true }
-      - uses: actions/upload-pages-artifact@v3
-        with: { path: site }
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Commit site/ to gh-pages
+        run: |
+          set -euo pipefail
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch -q origin gh-pages
+          wt="$RUNNER_TEMP/gh-pages"
+          git worktree add -q -B gh-pages "$wt" origin/gh-pages
+          rsync -a --delete --exclude .git site/ "$wt/"
+          git -C "$wt" add -A
+          git -C "$wt" commit -qm "site from ${GITHUB_SHA::7}" || { echo "site unchanged"; exit 0; }
+          git -C "$wt" push -q origin gh-pages
+          echo "Published https://meefs.github.io/InverseCramer/"
