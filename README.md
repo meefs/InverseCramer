@@ -10,6 +10,38 @@ Claude cloud container and once entirely by GitHub Actions, from the same code.
 
 GitHub results are committed to the `renders` branch under `gh/<piece>/`; cloud results are in `dist/cloud/<piece>/`.
 
+## The results
+
+### Flock: a Magic Eye made of paper swifts
+![Flock fly-in, from first swifts to the finished stereogram](dist/cloud/flock/anim_sheet.png)
+
+| Finished stereogram (view wall-eyed at 1:1 pixels) | Hidden depth vs what the decoder recovered |
+|---|---|
+| ![Flock still](dist/cloud/flock/flock_still.png) | ![QA: gull depth map and decoded depth](dist/cloud/flock/qa.png) |
+
+- Film: [`dist/cloud/flock/flock.mp4`](dist/cloud/flock/flock.mp4) (42 s, original Tchaikovsky-style score in B minor)
+- Interactive viewer: [`dist/cloud/flock/flock_viewer.html`](dist/cloud/flock/flock_viewer.html). Download it and open it
+  in a browser, then set the repeat slider for your screen.
+- QA: the decoder recovers the gull with an edge-tolerant F-score of 0.909 (gate 0.90).
+
+### Painter's Order: a comma-pump chorale for four beams
+![Painter's Order: beams painting the Tonnetz, the ghost chord, and the final reveal](dist/cloud/painters_order/sheet.png)
+
+- Film: [`dist/cloud/painters_order/painters_order.mp4`](dist/cloud/painters_order/painters_order.mp4) (58 s)
+- Every sound is the tile outline traced as an oscilloscope beam. Six rounds of C–Am–Dm–G in just intonation sink home
+  by six syntonic commas (−129 cents) and walk the chorale 24 fifths across the tessellation.
+
+### Cloud vs GitHub Actions
+| | Cloud container | GitHub Actions |
+|---|---|---|
+| Flock, wall time | 2 min 51 s | 3 min 47 s (5 jobs in parallel) |
+| Painter's Order, wall time | 6 min 24 s | 4 min 34 s (8 frame runners) |
+| Outputs | [`dist/cloud/`](dist/cloud) | [`renders` branch, `gh/`](../../tree/renders/gh) |
+
+The stereogram, the depth map and both soundtracks come out **byte-identical** on both platforms (SHA-256 in each
+`checksums.txt`). The runtimes, what happened on each front and how to speed up the next run are in
+**[REPORT.md](REPORT.md)**.
+
 ## What the SVG turned out to be
 - One prototile (16 cubic Béziers) placed 964 times, in four 90° rotations, one colour each, sharing a pivot (wallpaper group p4).
 - A square lattice of 83.07 px, tilted 22°.
