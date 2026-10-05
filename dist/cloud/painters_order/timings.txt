@@ -1,0 +1,4 @@
+score 27s
+frames 372s
+sheet 381s
+assemble 384s

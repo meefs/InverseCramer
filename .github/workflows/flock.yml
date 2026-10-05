@@ -1,0 +1,75 @@
+name: flock
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/wizardly-ritchie-9at5r9]
+    paths: [flock/**, common/**, canon/**, requirements.txt, .github/workflows/flock.yml, .github/actions/**]
+permissions:
+  contents: write
+concurrency: { group: flock, cancel-in-progress: true }
+env:
+  B: build/flock
+  SHARDS: 4
+jobs:
+  still:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Pattern cell, gull depth, stereogram, decoder QA gate
+        run: python -m flock.still $B
+      - name: Landing schedule and review sheet
+        run: python -m flock.animate $B sheet
+      - uses: actions/upload-artifact@v4
+        with: { name: flock-core, path: "build/flock/*.*", retention-days: 7 }
+  frames:
+    needs: still
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: { shard: [0, 1, 2, 3] }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - uses: actions/download-artifact@v4
+        with: { name: flock-core, path: build/flock }
+      - name: Render shard ${{ matrix.shard }}
+        run: python -m flock.animate $B ${{ matrix.shard }} $SHARDS
+      - uses: actions/upload-artifact@v4
+        with: { name: "flock-seg-${{ matrix.shard }}", path: build/flock/segments/, retention-days: 7 }
+  score:
+    needs: still
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - uses: actions/download-artifact@v4
+        with: { name: flock-core, path: build/flock }
+      - name: Tchaikovsky-inspired score
+        run: python -m flock.score $B
+      - uses: actions/upload-artifact@v4
+        with: { name: flock-score, path: build/flock/score.wav, retention-days: 7 }
+  publish:
+    needs: [frames, score]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - uses: actions/download-artifact@v4
+        with: { name: flock-core, path: build/flock }
+      - uses: actions/download-artifact@v4
+        with: { name: flock-score, path: build/flock }
+      - uses: actions/download-artifact@v4
+        with: { pattern: flock-seg-*, path: build/flock/segments, merge-multiple: true }
+      - name: Assemble MP4 and viewer
+        run: |
+          python -m flock.assemble $B
+          python -m flock.html $B
+          sha256sum $B/flock_still.png $B/depth.png $B/score.wav | tee $B/checksums.txt
+      - uses: actions/upload-artifact@v4
+        with: { name: flock-final, path: "build/flock/flock.mp4\nbuild/flock/flock_viewer.html", retention-days: 30 }
+      - uses: ./.github/actions/publish
+        with:
+          name: flock
+          files: >-
+            build/flock/flock.mp4 build/flock/flock_viewer.html build/flock/flock_still.png build/flock/depth.png
+            build/flock/qa.png build/flock/qa.json build/flock/anim_sheet.png build/flock/checksums.txt

@@ -1,0 +1,57 @@
+name: painters-order
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/wizardly-ritchie-9at5r9]
+    paths: [painters_order/**, common/**, canon/**, requirements.txt, .github/workflows/painters-order.yml, .github/actions/**]
+permissions:
+  contents: write
+concurrency: { group: painters-order, cancel-in-progress: true }
+env:
+  B: build/painters_order
+  SHARDS: 8
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Comma-pump chorale traced from the tile
+        run: python -m painters_order.audio $B
+      - uses: actions/upload-artifact@v4
+        with: { name: po-score, path: "build/painters_order/score.*", retention-days: 7 }
+  frames:
+    needs: score
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: { shard: [0, 1, 2, 3, 4, 5, 6, 7] }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - uses: actions/download-artifact@v4
+        with: { name: po-score, path: build/painters_order }
+      - name: Render shard ${{ matrix.shard }}
+        run: python -m painters_order.film $B ${{ matrix.shard }} $SHARDS
+      - uses: actions/upload-artifact@v4
+        with: { name: "po-seg-${{ matrix.shard }}", path: build/painters_order/segments/, retention-days: 7 }
+  publish:
+    needs: frames
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - uses: actions/download-artifact@v4
+        with: { name: po-score, path: build/painters_order }
+      - uses: actions/download-artifact@v4
+        with: { pattern: po-seg-*, path: build/painters_order/segments, merge-multiple: true }
+      - name: Assemble MP4 and review sheet
+        run: |
+          python -m painters_order.film $B sheet
+          python -m painters_order.assemble $B
+          sha256sum $B/score.wav | tee $B/checksums.txt
+      - uses: actions/upload-artifact@v4
+        with: { name: painters-order-final, path: build/painters_order/painters_order.mp4, retention-days: 30 }
+      - uses: ./.github/actions/publish
+        with:
+          name: painters_order
+          files: build/painters_order/painters_order.mp4 build/painters_order/sheet.png build/painters_order/checksums.txt

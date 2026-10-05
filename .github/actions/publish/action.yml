@@ -1,0 +1,27 @@
+name: publish-renders
+description: Commit finished files to the `renders` branch under gh/<name>/ so they can be fetched with git
+inputs:
+  name: { required: true, description: "subfolder under gh/" }
+  files: { required: true, description: "space-separated paths to copy" }
+runs:
+  using: composite
+  steps:
+    - name: Commit to renders branch
+      shell: bash
+      run: |
+        set -euo pipefail
+        tmp=$(mktemp -d)
+        cp ${{ inputs.files }} "$tmp"/
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        for attempt in 1 2 3 4; do
+          if git fetch -q origin renders 2>/dev/null; then git checkout -q -B renders origin/renders; else git checkout -q --orphan renders && git rm -rq --cached . && git clean -fdq -e build; fi
+          mkdir -p gh/${{ inputs.name }}
+          cp "$tmp"/* gh/${{ inputs.name }}/
+          echo "run ${{ github.run_id }} from ${{ github.sha }} at $(date -u +%FT%TZ)" > gh/${{ inputs.name }}/PROVENANCE.txt
+          git add gh/${{ inputs.name }}
+          git commit -qm "renders: ${{ inputs.name }} (run ${{ github.run_id }})" || { echo "nothing to commit"; exit 0; }
+          git push -q origin renders && exit 0
+          sleep $((attempt * 5))
+        done
+        exit 1

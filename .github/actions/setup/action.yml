@@ -1,0 +1,17 @@
+name: setup-render
+description: Python 3.12 + pip cache, ffmpeg, Cairo and DejaVu fonts (the runner image has none of the three)
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+        cache: pip
+    - name: System packages
+      shell: bash
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq --no-install-recommends ffmpeg libcairo2 fonts-dejavu-core > /dev/null
+    - name: Python packages
+      shell: bash
+      run: pip install -q -r requirements.txt
