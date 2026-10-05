@@ -1,0 +1,26 @@
+name: video-embed-test
+# Asks GitHub's own Markdown renderer which ways of embedding a repo MP4 survive in a README.
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/wizardly-ritchie-9at5r9]
+    paths: [.github/workflows/video-embed-test.yml]
+permissions: { contents: read }
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          RAW=https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/docs/flock-720p.mp4
+          BLOB=https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/docs/flock-720p.mp4?raw=true
+          SITE=https://meefs.github.io/InverseCramer/media/flock.mp4
+          for label in "video-raw|<video src=\"$RAW\" autoplay muted loop playsinline controls width=\"640\"></video>" \
+                       "video-blob|<video src=\"$BLOB\" autoplay muted loop controls></video>" \
+                       "video-site|<video src=\"$SITE\" autoplay muted loop controls></video>" \
+                       "bare-raw-url|$RAW" \
+                       "relative-video|<video src=\"docs/flock-720p.mp4\" autoplay muted loop controls></video>"; do
+            name=${label%%|*}; md=${label#*|}
+            html=$(gh api markdown -f text="$md" -f mode=gfm -f context=${{ github.repository }})
+            echo "== $name"; echo "$html" | head -c 600; echo
+          done
