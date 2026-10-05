@@ -1,0 +1,53 @@
+# Render Painter's Order on GitHub Actions. Copy to .github/workflows/painters-order.yml and set SVG below.
+# Frames are split across runners (2 vCPU each); the runner image needs ffmpeg + Cairo installed.
+name: painters-order
+on: { workflow_dispatch: {} }
+permissions: { contents: read }
+env:
+  SVG: canon/tessellation.svg          # path to your tessellation in the repo
+  SKILL: .claude/skills/painters-order # where this skill lives in the repo
+  B: build/po
+  SHARDS: 8
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends ffmpeg libcairo2 fonts-dejavu-core > /dev/null
+          pip install -q numpy scipy cairocffi
+      - run: PO_PREVIEW=1 $SKILL/scripts/run.sh $SVG $B 1
+      - uses: actions/upload-artifact@v4
+        with: { name: po-score, path: build/po/ }
+  frames:
+    needs: score
+    runs-on: ubuntu-latest
+    strategy: { matrix: { shard: [0, 1, 2, 3, 4, 5, 6, 7] } }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends ffmpeg libcairo2 fonts-dejavu-core > /dev/null
+          pip install -q numpy scipy cairocffi
+      - uses: actions/download-artifact@v4
+        with: { name: po-score, path: build/po }
+      - run: PO_SVG=$(realpath $SVG) PYTHONPATH=$SKILL/scripts python -m po_kit.film $B ${{ matrix.shard }} $SHARDS
+      - uses: actions/upload-artifact@v4
+        with: { name: "po-seg-${{ matrix.shard }}", path: build/po/segments/ }
+  film:
+    needs: frames
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends ffmpeg libcairo2 fonts-dejavu-core > /dev/null
+          pip install -q numpy scipy cairocffi
+      - uses: actions/download-artifact@v4
+        with: { name: po-score, path: build/po }
+      - uses: actions/download-artifact@v4
+        with: { pattern: po-seg-*, path: build/po/segments, merge-multiple: true }
+      - run: PO_SVG=$(realpath $SVG) PYTHONPATH=$SKILL/scripts python -m po_kit.assemble $B
+      - uses: actions/upload-artifact@v4
+        with: { name: painters-order, path: "build/po/film.mp4\nbuild/po/sheet.png\nbuild/po/web/" }

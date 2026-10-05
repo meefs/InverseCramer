@@ -57,6 +57,19 @@ The stereogram, the depth map and both soundtracks come out **byte-identical** o
 `checksums.txt`). The runtimes, what happened on each front and how to speed up the next run are in
 **[REPORT.md](REPORT.md)**.
 
+## Skill: make your own Painter's Order
+The Painter's Order pipeline is packaged as a Claude skill in [`.claude/skills/painters-order/`](.claude/skills/painters-order)
+(installable bundle: [`dist/painters-order.skill`](dist/painters-order.skill)). Give it any tessellation SVG that is
+one prototile repeated with `matrix(...)` transforms. It works out the orientation classes and lattice and prints the
+tile's harmonic spectrum, then renders the oscilloscope chorale and the browser tile organ:
+
+```bash
+PO_PREVIEW=1 .claude/skills/painters-order/scripts/run.sh canon/tessellation_15.svg build/po   # ~30 s preview
+PO_TITLE="My Walk" .claude/skills/painters-order/scripts/run.sh my-tiling.svg build/po         # full film
+```
+It was tested on tessellation 15 (four rotations, square lattice; reproduces this repo's soundtrack byte for byte), a
+three-rotation hexagonal tiling, and a two-class tiling whose copies don't share a pivot.
+
 ## What the SVG turned out to be
 - One prototile (16 cubic Béziers) placed 964 times, in four 90° rotations, one colour each, sharing a pivot (wallpaper group p4).
 - A square lattice of 83.07 px, tilted 22°.
