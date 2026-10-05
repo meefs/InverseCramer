@@ -10,6 +10,10 @@ Claude cloud container and once entirely by GitHub Actions, from the same code.
 
 GitHub results are committed to the `renders` branch under `gh/<piece>/`; cloud results are in `dist/cloud/<piece>/`.
 
+**▶ Website:** https://meefs.github.io/InverseCramer/ : both films, the live Magic Eye viewer, and a playable **tile organ**
+(click the lattice to hear the tile traced as sound; Space plays the comma pump). Source in `site/`, deployed by
+`.github/workflows/pages.yml`; refresh it from new renders with `site/build.sh`.
+
 ## The results
 
 ### Flock: a Magic Eye made of paper swifts
