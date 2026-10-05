@@ -1,6 +1,10 @@
 name: site-check
 # Reports whether the GitHub Pages site is live (the agent's own network cannot reach github.io).
-on: [workflow_dispatch]
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/wizardly-ritchie-9at5r9]
+    paths: [.github/workflows/site-check.yml]
 permissions:
   contents: read
   pages: read
