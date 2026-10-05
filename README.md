@@ -17,9 +17,10 @@ GitHub results are committed to the `renders` branch under `gh/<piece>/`; cloud 
 ## The results
 
 ### Flock: a Magic Eye made of paper swifts
-[![Flock: paper swifts fly in and land as a Magic Eye (click to play the full film with sound)](docs/flock-preview.gif)](dist/cloud/flock/flock.mp4)
+[![Flock: paper swifts fly in and land as a Magic Eye (click to play the full film with sound)](docs/flock-preview.gif)](docs/flock-720p.mp4)
 
-▶ **[Play Flock (MP4, 42 s, with sound)](dist/cloud/flock/flock.mp4)**. The loop above is a silent 2× preview of the fly-in.
+▶ **[Play Flock (MP4, 42 s, with sound)](docs/flock-720p.mp4)**. The loop above is a silent 2× preview of the fly-in.
+Full 1080p quality: [`dist/cloud/flock/flock.mp4`](dist/cloud/flock/flock.mp4).
 
 ![Flock contact sheet, from first swifts to the finished stereogram](dist/cloud/flock/anim_sheet.png)
 
@@ -33,10 +34,11 @@ GitHub results are committed to the `renders` branch under `gh/<piece>/`; cloud 
 - QA: the decoder recovers the gull with an edge-tolerant F-score of 0.909 (gate 0.90).
 
 ### Painter's Order: a comma-pump chorale for four beams
-[![Painter's Order: four oscilloscope beams paint the tessellation (click to play the full film with sound)](docs/painters-order-preview.gif)](dist/cloud/painters_order/painters_order.mp4)
+[![Painter's Order: four oscilloscope beams paint the tessellation (click to play the full film with sound)](docs/painters-order-preview.gif)](docs/painters-order-720p.mp4)
 
-▶ **[Play Painter's Order (MP4, 58 s, with sound)](dist/cloud/painters_order/painters_order.mp4)**. The loop above is a
-silent, sped-up preview of the walk and the final reveal.
+▶ **[Play Painter's Order (MP4, 58 s, with sound)](docs/painters-order-720p.mp4)**. The loop above is a
+silent, sped-up preview of the walk and the final reveal. Full 1080p quality:
+[`dist/cloud/painters_order/painters_order.mp4`](dist/cloud/painters_order/painters_order.mp4).
 
 ![Painter's Order contact sheet: beams painting the Tonnetz, the ghost chord, and the reveal](dist/cloud/painters_order/sheet.png)
 
