@@ -14,7 +14,8 @@ jobs:
     steps:
       - name: Pages configuration
         env: { GH_TOKEN: "${{ github.token }}" }
-        run: gh api repos/${{ github.repository }}/pages || echo "Pages API: not enabled"
+        run: |
+          gh api repos/${{ github.repository }}/pages || echo "Pages is not enabled for this repository"
       - name: Fetch the site
         run: |
           for path in "" organ.html organ_data.js flock-viewer.html media/flock.mp4 media/painters-order.mp4 preview.jpg; do
