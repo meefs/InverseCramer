@@ -11,13 +11,13 @@
   "precision": 0.9152156904670499,
   "recall": 0.9021471161564041,
   "iou": 0.6689719227846421,
-  "depth_corr": 0.728777187128168,
+  "depth_corr": 0.7287771871281685,
   "gate_f_tolerant": 0.9,
   "passed": true,
   "timings_s": {
-    "cell": 0.17,
-    "depth": 0.21,
-    "stereogram": 0.3,
-    "decode": 2.46
+    "cell": 0.24,
+    "depth": 0.34,
+    "stereogram": 0.57,
+    "decode": 3.74
   }
 }
