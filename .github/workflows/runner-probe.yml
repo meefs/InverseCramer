@@ -1,0 +1,16 @@
+name: runner-probe
+on:
+  workflow_dispatch:
+  push:
+    paths: [".github/workflows/runner-probe.yml"]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report runner toolchain
+        run: |
+          set -x
+          uname -a; nproc; free -g; df -h . | tail -1
+          python3 --version; node --version
+          which ffmpeg && ffmpeg -version | head -1 || echo "no ffmpeg"
+          dpkg -l | grep -E 'libcairo2 ' || echo "no libcairo2"
