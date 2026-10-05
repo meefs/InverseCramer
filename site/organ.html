@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tile Organ · Inverse Cramer</title>
+<meta name="description" content="Play tessellation 15 as an instrument: every lattice site is a just-intonation pitch, and every voice is the tile outline traced as sound.">
+<style>
+  :root{--bg:#0e0714;--ink:#efe8f6;--muted:#a596b3;--line:#382c44;--gold:#ffd166}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden;
+    font:15px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  canvas{display:block;width:100%;height:100%;cursor:crosshair;touch-action:none}
+  .hud{position:fixed;left:14px;top:12px;right:14px;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;pointer-events:none}
+  .hud h1{font-size:1.05em;margin:0;letter-spacing:.3px}
+  .hud .hint{color:var(--muted);font:12.5px ui-monospace,Menlo,Consolas,monospace}
+  .btns{position:fixed;left:14px;bottom:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .btns button{font:600 13px ui-monospace,Menlo,Consolas,monospace;color:var(--ink);background:rgba(0,0,0,.55);
+    border:1px solid var(--line);border-radius:20px;padding:8px 13px;cursor:pointer}
+  .btns button:hover,.btns button.on{border-color:var(--gold);color:var(--gold)}
+  button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .status{position:fixed;right:14px;bottom:16px;color:var(--muted);font:12.5px ui-monospace,Menlo,Consolas,monospace;text-align:right;pointer-events:none}
+  .hud .hint b{color:var(--gold);font-weight:700}
+  .hud .hint{display:none}
+  @media (hover:hover){.hud .hint{display:inline}}
+  @media (max-width:720px){.status{display:none}}
+</style>
+</head>
+<body>
+<canvas id="cv" aria-label="Tessellation lattice. Click a dot to play its pitch."></canvas>
+<div class="hud">
+  <h1>Tile organ</h1>
+  <span class="hint"><b>click</b> a dot to play · <b>shift-click</b> to hold · <b>Space</b> comma pump · <b>arrows</b> pan · <b>wheel</b> zoom · <b>X</b> clear</span>
+</div>
+<div class="btns">
+  <button id="play" type="button">▶ Comma pump</button>
+  <button id="clear" type="button">Clear</button>
+</div>
+<div class="status" id="status">fifths →, major thirds ↗ · tap to start sound</div>
+<script src="organ_data.js"></script>
+<script>
+(function(){
+  const O = window.ORGAN;
+  const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+  const statusEl = document.getElementById("status"), playBtn = document.getElementById("play");
+  const GAIN = [0.16, 0.12, 0.10, 0.09], LOW = [65.41, 130.81, 196.0, 261.63];
+  const COL = O.classes.map(c => c.color);
+  const CORE = COL.map(h => { const n = parseInt(h.slice(1), 16); const r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+    return `rgb(${Math.round(.45*r+140)},${Math.round(.45*g+140)},${Math.round(.45*b+140)})`; });
+  const A = O.latA, B = O.latB, det = A[0]*B[1] - A[1]*B[0];
+  let W = 0, H = 0, dpr = 1;
+  const cam = { x: 0, y: 0, s: 110 };
+  let ac = null, master = null, waves = null;
+  let events = [];          // {voice, site:[i,j], freq, t0, t1|null, nodes, latched}
+  let rr = 0, hover = null, auto = null;
+
+  // ---- geometry --------------------------------------------------------------------------------
+  const tile = new Path2D();
+  tile.moveTo(O.start[0], O.start[1]);
+  for (const [c1, c2, p] of O.segs) tile.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], p[0], p[1]);
+  tile.closePath();
+  function trace(ph) {
+    ph = ((ph % 1) + 1) % 1; const n = O.segs.length; const k = Math.min(n - 1, Math.floor(ph * n)); const t = ph * n - k;
+    const p0 = k ? O.segs[k - 1][2] : O.start, [c1, c2, p3] = O.segs[k], u = 1 - t;
+    return [u*u*u*p0[0] + 3*u*u*t*c1[0] + 3*u*t*t*c2[0] + t*t*t*p3[0], u*u*u*p0[1] + 3*u*u*t*c1[1] + 3*u*t*t*c2[1] + t*t*t*p3[1]];
+  }
+  const site = (i, j) => [i*A[0] + j*B[0], i*A[1] + j*B[1]];
+  const toScreen = (x, y) => [(x - cam.x)*cam.s + W/2, (y - cam.y)*cam.s + H/2];
+  function nearestSite(px, py) {
+    const x = (px - W/2)/cam.s + cam.x, y = (py - H/2)/cam.s + cam.y;
+    const i = (x*B[1] - y*B[0]) / det, j = (A[0]*y - A[1]*x) / det;
+    return [Math.round(i), Math.round(j)];
+  }
+  const FIFTHS = ["Fb","Cb","Gb","Db","Ab","Eb","Bb","F","C","G","D","A","E","B","F#","C#","G#","D#","A#","E#","B#"];
+  function noteName(i, j) {
+    const pos = i + 4*j, nm = FIFTHS[pos + 8] || ("q" + pos), c = -j;
+    return c ? nm + (c > 0 ? "+" : "") + c : nm;
+  }
+  function freqFor(i, j, v) {
+    let f = O.cRef * Math.pow(3, i) * Math.pow(5, j);
+    while (f >= 2*LOW[v]) f /= 2; while (f < LOW[v]) f *= 2; return f;
+  }
+
+  // ---- audio: each voice is the tile outline as a pair of periodic waves (left = X, right = Y) ---
+  function ensureAudio() {
+    if (ac) { if (ac.state === "suspended") ac.resume(); return; }
+    ac = new (window.AudioContext || window.webkitAudioContext)();
+    const comp = ac.createDynamicsCompressor(); comp.threshold.value = -10;
+    master = ac.createGain(); master.gain.value = 0.7; master.connect(comp).connect(ac.destination);
+    waves = O.waves.map(w => ({
+      x: ac.createPeriodicWave(new Float32Array(w.x[0]), new Float32Array(w.x[1]), { disableNormalization: true }),
+      y: ac.createPeriodicWave(new Float32Array(w.y[0]), new Float32Array(w.y[1]), { disableNormalization: true }) }));
+    statusEl.textContent = "fifths →, major thirds ↗";
+  }
+  function startVoice(v, freq, when) {
+    const g = ac.createGain(), m = ac.createChannelMerger(2);
+    g.gain.setValueAtTime(0, when); g.gain.linearRampToValueAtTime(GAIN[v], when + 0.03);
+    m.connect(g).connect(master);
+    const oscs = [waves[v].x, waves[v].y].map((w, ch) => { const o = ac.createOscillator(); o.setPeriodicWave(w);
+      o.frequency.value = freq; o.connect(m, 0, ch); o.start(when); return o; });
+    return { g, oscs };
+  }
+  function stopVoice(nodes, when, tau) {
+    nodes.g.gain.cancelScheduledValues(when); nodes.g.gain.setTargetAtTime(0, when, tau);
+    nodes.oscs.forEach(o => o.stop(when + tau * 8));
+  }
+  const now = () => ac ? ac.currentTime : performance.now() / 1000;
+
+  // ---- playing by hand ----------------------------------------------------------------------------
+  let held = null;
+  cv.addEventListener("pointerdown", e => {
+    ensureAudio(); cv.setPointerCapture(e.pointerId);
+    const [i, j] = nearestSite(e.offsetX, e.offsetY);
+    const existing = events.find(ev => ev.latched && ev.t1 === null && ev.site[0] === i && ev.site[1] === j);
+    if (existing) { release(existing, 0.15); return; }
+    const v = rr++ % 4, f = freqFor(i, j, v), t = now();
+    const ev = { voice: v, site: [i, j], freq: f, t0: t, t1: null, latched: e.shiftKey, nodes: startVoice(v, f, t) };
+    events.push(ev); if (!e.shiftKey) held = ev;
+  });
+  cv.addEventListener("pointerup", () => { if (held) { release(held, 0.5); held = null; } });
+  cv.addEventListener("pointermove", e => { hover = nearestSite(e.offsetX, e.offsetY); });
+  cv.addEventListener("pointerleave", () => { hover = null; });
+  function release(ev, tau) { if (ev.t1 !== null) return; ev.t1 = now(); stopVoice(ev.nodes, ev.t1, tau); }
+  function clearAll() { stopAuto(); events.forEach(ev => release(ev, 0.1)); events = []; }
+
+  // ---- the comma pump, scheduled on the audio clock ---------------------------------------------
+  function startAuto() {
+    ensureAudio(); clearAll();
+    const t0 = ac.currentTime + 0.15, list = [];
+    O.voices.forEach((notes, v) => notes.forEach(n => list.push({ voice: v, n })));
+    O.ghost.forEach(n => list.push({ voice: n.voice, n, ghost: true }));
+    for (const { voice, n, ghost } of list) {
+      const ev = { voice, site: n.site, freq: n.freq, t0: t0 + n.t0, t1: t0 + n.t1, latched: false, ghost: !!ghost,
+                   nodes: startVoice(voice, n.freq, t0 + n.t0) };
+      stopVoice(ev.nodes, t0 + n.t1, 0.12);
+      events.push(ev);
+    }
+    auto = { t0, end: t0 + O.duration };
+    playBtn.classList.add("on"); playBtn.textContent = "■ Stop";
+  }
+  function stopAuto() {
+    if (!auto) return; const t = now();
+    events.forEach(ev => { if (ev.t0 > t) { stopVoice(ev.nodes, t, 0.02); ev.dead = true; } else if (ev.t1 > t) { ev.t1 = t; stopVoice(ev.nodes, t, 0.15); } });
+    events = events.filter(ev => !ev.dead); auto = null;
+    playBtn.classList.remove("on"); playBtn.textContent = "▶ Comma pump";
+  }
+  playBtn.addEventListener("click", () => auto ? stopAuto() : startAuto());
+  document.getElementById("clear").addEventListener("click", clearAll);
+  window.addEventListener("keydown", e => {
+    if (e.key === " ") { e.preventDefault(); auto ? stopAuto() : startAuto(); }
+    else if (e.key === "x" || e.key === "X") clearAll();
+    else if (e.key.startsWith("Arrow")) {
+      const d = 60 / cam.s; e.preventDefault();
+      if (e.key === "ArrowLeft") cam.x -= d; if (e.key === "ArrowRight") cam.x += d;
+      if (e.key === "ArrowUp") cam.y -= d; if (e.key === "ArrowDown") cam.y += d;
+    }
+  });
+  cv.addEventListener("wheel", e => { e.preventDefault(); cam.s = Math.max(28, Math.min(260, cam.s * Math.exp(-e.deltaY * 0.0015))); }, { passive: false });
+
+  // ---- drawing --------------------------------------------------------------------------------------
+  function resize() {
+    dpr = window.devicePixelRatio || 1; W = cv.clientWidth; H = cv.clientHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    if (!resize.done) { cam.s = Math.max(60, Math.min(W, H) / 6); resize.done = true; }
+  }
+  window.addEventListener("resize", resize);
+
+  function brightness(ev, t) {
+    if (t < ev.t0) return 0;
+    if (ev.t1 === null || t < ev.t1) return Math.min(1, (t - ev.t0) / 0.03) * (ev.ghost ? 0.75 : 1);
+    return 0.09 + 0.41 * Math.exp(-(t - ev.t1) / 2.2);
+  }
+  function drawTile(ev, g, t) {
+    const L = O.classes[ev.voice].lin, k = O.tileScale * cam.s, [sx, sy] = toScreen(...site(...ev.site));
+    ctx.setTransform(dpr*k*L[0][0], dpr*k*L[1][0], dpr*k*L[0][1], dpr*k*L[1][1], dpr*sx, dpr*sy);
+    ctx.globalAlpha = 0.09 * g; ctx.fillStyle = COL[ev.voice]; ctx.fill(tile);
+    for (const [w, a, c] of [[14, .05, COL[ev.voice]], [5, .22, COL[ev.voice]], [1.8, .95, CORE[ev.voice]]]) {
+      ctx.globalAlpha = a * g; ctx.strokeStyle = c; ctx.lineWidth = w / k; ctx.stroke(tile);
+    }
+  }
+  function frame() {
+    const t = now();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
+    const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, "#0e0714"); bg.addColorStop(1, "#040a07");
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+    // camera follows the music while the comma pump plays
+    const sounding = events.filter(ev => t >= ev.t0 && (ev.t1 === null || t < ev.t1) && !ev.ghost);
+    if (auto && sounding.length) {
+      let x = 0, y = 0; sounding.forEach(ev => { const p = site(...ev.site); x += p[0]; y += p[1]; });
+      x /= sounding.length; y /= sounding.length; cam.x += (x - cam.x) * 0.03; cam.y += (y - cam.y) * 0.03;
+      if (t > auto.end) { auto = null; playBtn.classList.remove("on"); playBtn.textContent = "▶ Comma pump"; }
+    }
+
+    // lattice graticule
+    const corners = [[0,0],[W,0],[0,H],[W,H]].map(([px,py]) => nearestSite(px, py));
+    const is = corners.map(c => c[0]), js = corners.map(c => c[1]);
+    ctx.fillStyle = "rgba(190,178,215,.22)";
+    for (let i = Math.min(...is) - 1; i <= Math.max(...is) + 1; i++)
+      for (let j = Math.min(...js) - 1; j <= Math.max(...js) + 1; j++) {
+        const [x, y] = toScreen(...site(i, j));
+        if (x > -5 && x < W + 5 && y > -5 && y < H + 5) { ctx.beginPath(); ctx.arc(x, y, 1.8, 0, 7); ctx.fill(); }
+      }
+
+    // tiles, additive like phosphor
+    ctx.globalCompositeOperation = "lighter";
+    const live = [];
+    for (const ev of events) { const g = brightness(ev, t); if (g > 0.01) { drawTile(ev, g, t); live.push([ev, g]); } }
+    if (events.length > 600) events = events.filter(ev => ev.t1 === null || t - ev.t1 < 20 || events.indexOf(ev) > events.length - 400);
+
+    // comet heads: where each beam is right now (it strobes against the display rate)
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    for (const [ev, g] of live) {
+      if (ev.t1 !== null && t >= ev.t1) continue;
+      const L = O.classes[ev.voice].lin, k = O.tileScale * cam.s, [sx, sy] = toScreen(...site(...ev.site));
+      const ph = ev.freq * (t - ev.t0);
+      for (let q = 0; q < 24; q++) {
+        const [px, py] = trace(ph - q * 0.009), a = (1 - q / 24) ** 2 * g;
+        const x = sx + k * (L[0][0]*px + L[0][1]*py), y = sy + k * (L[1][0]*px + L[1][1]*py);
+        ctx.globalAlpha = 0.6 * a; ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(x, y, 4.5 - 3 * q / 24, 0, 7); ctx.fill();
+      }
+    }
+
+    // labels
+    ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = 1;
+    ctx.font = "12.5px ui-monospace,Menlo,Consolas,monospace";
+    for (const [ev, g] of live) {
+      if (ev.t1 !== null && t >= ev.t1) continue;
+      const [x, y] = toScreen(...site(...ev.site));
+      ctx.fillStyle = CORE[ev.voice]; ctx.globalAlpha = .9 * g;
+      ctx.fillText(`${noteName(...ev.site)}  ${ev.freq.toFixed(1)} Hz`, x + 9, y - 9 - 15 * ev.voice);
+    }
+    if (hover) {
+      const [x, y] = toScreen(...site(...hover)); ctx.globalAlpha = .8;
+      ctx.strokeStyle = "#ffd166"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, 7, 0, 7); ctx.stroke();
+      ctx.fillStyle = "#ffd166"; ctx.fillText(noteName(...hover), x + 10, y + 16);
+    }
+    if (auto) statusEl.textContent = `comma pump · ${Math.max(0, t - auto.t0).toFixed(1)} s · home sinks ${Math.abs(O.drift)} cents`;
+    requestAnimationFrame(frame);
+  }
+  resize(); requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
