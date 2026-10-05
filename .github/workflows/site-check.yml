@@ -1,0 +1,18 @@
+name: site-check
+# Reports whether the GitHub Pages site is live (the agent's own network cannot reach github.io).
+on: [workflow_dispatch]
+permissions:
+  contents: read
+  pages: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pages configuration
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: gh api repos/${{ github.repository }}/pages || echo "Pages API: not enabled"
+      - name: Fetch the site
+        run: |
+          for path in "" organ.html organ_data.js flock-viewer.html media/flock.mp4 media/painters-order.mp4 preview.jpg; do
+            printf '%-26s ' "/$path"; curl -s -o /dev/null -w '%{http_code} %{size_download}B\n' -r 0-1023 "https://meefs.github.io/InverseCramer/$path"
+          done
