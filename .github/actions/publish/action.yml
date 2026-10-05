@@ -12,16 +12,23 @@ runs:
         set -euo pipefail
         tmp=$(mktemp -d)
         cp ${{ inputs.files }} "$tmp"/
-        git config user.name "github-actions[bot]"
-        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        # work in a separate worktree so the job's own checkout (and its local actions) stays intact
+        wt="$RUNNER_TEMP/renders"
         for attempt in 1 2 3 4; do
-          if git fetch -q origin renders 2>/dev/null; then git checkout -q -B renders origin/renders; else git checkout -q --orphan renders && git rm -rq --cached . && git clean -fdq -e build; fi
-          mkdir -p gh/${{ inputs.name }}
-          cp "$tmp"/* gh/${{ inputs.name }}/
-          echo "run ${{ github.run_id }} from ${{ github.sha }} at $(date -u +%FT%TZ)" > gh/${{ inputs.name }}/PROVENANCE.txt
-          git add gh/${{ inputs.name }}
-          git commit -qm "renders: ${{ inputs.name }} (run ${{ github.run_id }})" || { echo "nothing to commit"; exit 0; }
-          git push -q origin renders && exit 0
+          rm -rf "$wt"; git worktree prune
+          if git fetch -q origin renders 2>/dev/null; then
+            git worktree add -q -B renders "$wt" origin/renders
+          else
+            git worktree add -q --detach "$wt" && git -C "$wt" checkout -q --orphan renders && git -C "$wt" rm -rqf --cached . && git -C "$wt" clean -fdq
+          fi
+          mkdir -p "$wt/gh/${{ inputs.name }}"
+          cp "$tmp"/* "$wt/gh/${{ inputs.name }}/"
+          echo "run ${{ github.run_id }} from ${{ github.sha }} at $(date -u +%FT%TZ)" > "$wt/gh/${{ inputs.name }}/PROVENANCE.txt"
+          git -C "$wt" add "gh/${{ inputs.name }}"
+          git -C "$wt" commit -qm "renders: ${{ inputs.name }} (run ${{ github.run_id }})" || { echo "nothing to commit"; exit 0; }
+          git -C "$wt" push -q origin renders && exit 0
           sleep $((attempt * 5))
         done
         exit 1
