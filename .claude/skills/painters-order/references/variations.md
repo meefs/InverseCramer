@@ -5,7 +5,7 @@ score automatically, because they only read `score.json`.
 
 | Idea | Change | What you see and hear |
 |---|---|---|
-| **Sharp pump** | reverse the progression: C → G → Dm → Am → C | home rises a comma per round; the walk heads the other way, (+4, −1) |
+| **Sharp pump** | built in: `PO_DIRECTION=up` (C → G → Dm → Am → C) | home rises a comma per round; the walk heads the other way, (+4, −1) |
 | **Diesis pump** (128/125, 41 cents) | cycle through three major thirds, C → E → G# → B#≈C, holding tones | the walk runs up the third axis (j); a big, fast drift |
 | **Static JI chorale** | a progression whose path closes (I–IV–V–I with no held-tone constraint) | no drift; the painting stays in one neighbourhood and becomes a dense pinwheel |
 | **Septimal** | add a third lattice direction for 7/4 (needs a 3-D lattice or an extra class mapping) | harmonic-seventh chords, bluesy colour; good for tilings with 6 classes |

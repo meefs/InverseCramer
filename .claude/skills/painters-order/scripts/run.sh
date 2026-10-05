@@ -5,13 +5,15 @@
 #
 # Environment (all optional):
 #   PO_PREVIEW=1     analysis + soundtrack + contact sheet only (about a minute); skip the full film
-#   PO_CYCLES=6      rounds of the comma pump (each sinks home by 81/80, about 21.5 cents; ~6.4 s each)
+#   PO_CYCLES=6      rounds of the comma pump (each moves home by 81/80, about 21.5 cents; ~6.4 s each)
+#   PO_DIRECTION=down  'down' (C Am Dm G, sinks) or 'up' (C G Dm Am, rises)
 #   PO_CHORD_DUR=1.6 seconds per chord
 #   PO_CREF=130.81   frequency of the opening C, in Hz
 #   PO_TITLE / PO_SUBTITLE   text for the title card (and the organ page)
 set -euo pipefail
 HERE=$(cd "$(dirname "$0")" && pwd)
-[ $# -ge 2 ] || { sed -n 2,13p "$0"; exit 2; }
+[ $# -ge 2 ] || { sed -n 2,14p "$0"; exit 2; }
+export PYTHONDONTWRITEBYTECODE=1  # leave the skill folder untouched (it may be read-only)
 export PO_SVG=$(realpath "$1") PYTHONPATH="$HERE${PYTHONPATH:+:$PYTHONPATH}"
 B=$2; N=${3:-$(nproc)}
 mkdir -p "$B/web"; : > "$B/timings.txt"

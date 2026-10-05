@@ -1,6 +1,6 @@
 ---
 name: painters-order
-description: Turn a tessellation (an SVG of one prototile repeated with matrix transforms) into "Painter's Order", a four-beam oscilloscope chorale. Each voice sounds by tracing the tile outline as its waveform, the tiling's lattice becomes a just-intonation Tonnetz (fifths one way, major thirds the other), and a comma pump walks the music across the tiles before the tiling is painted in the order the music visited it. Produces a 1080p MP4 with soundtrack, a contact sheet, and a playable browser "tile organ". Use this whenever someone wants to make music or sound from a tessellation, sonify or animate a tiling, build an oscilloscope/vector-scope piece from a drawing, explore just intonation or comma drift on a lattice, or asks for "another Painter's Order", even if they don't use that name.
+description: Turn a tessellation (an SVG of one prototile repeated with matrix transforms) into "Painter's Order", a four-beam oscilloscope chorale. Each voice sounds by tracing the tile outline as its waveform, the tiling's lattice becomes a just-intonation Tonnetz (fifths one way, major thirds the other), and a comma pump walks the music across the tiles before the tiling is painted in the order the music visited it. Produces a 1080p MP4 with soundtrack, a contact sheet, and a playable browser "tile organ". Use this whenever someone wants to make music or sound from a tessellation, sonify or animate a tiling, build an oscilloscope, XY-mode or vectorscope video where a beam draws the tiles, explore just intonation or comma drift on a lattice, or asks for "another Painter's Order", even if they don't use that name.
 ---
 
 # Painter's Order
@@ -62,14 +62,15 @@ Knobs (environment variables):
 
 | Variable | Default | Effect |
 |---|---|---|
-| `PO_CYCLES` | 6 | rounds of the pump; each adds ~6.4 s and sinks home one more comma |
+| `PO_CYCLES` | 6 | rounds of the pump; each adds ~6.4 s and moves home one more comma |
+| `PO_DIRECTION` | down | `down` = C Am Dm G, home sinks; `up` = C G Dm Am, home rises and the walk heads the other way |
 | `PO_CHORD_DUR` | 1.6 | seconds per chord |
 | `PO_CREF` | 130.81 | Hz of the opening C |
 | `PO_TITLE`, `PO_SUBTITLE` | Painter's Order / a comma-pump chorale for four beams | title card and organ page title |
 
 ### 4. Hand over
-- `film.mp4`: the piece. Mention its length, the drift in cents (from `score.json` `drift_cents`) and how many fifths
-  the walk covers.
+- `film.mp4`: the piece. Mention its length, the drift in cents (from `score.json` `drift_cents`, signed) and how
+  many fifths the walk covers.
 - `web/` (`index.html` + `organ_data.js`): a self-contained page. Click lattice dots to play their pitches (each voice
   is the tile as two WebAudio periodic waves); Space plays the comma pump. It can go straight onto GitHub Pages.
 - For a README, GitHub deletes `<video>` tags, so embed an animated WebP of the film:
@@ -81,6 +82,10 @@ frames across runners and installs the system packages the runner image lacks.
 ## Requirements
 Python 3.10+ with `numpy scipy cairocffi`, the Cairo C library, ffmpeg with libx264, and DejaVu fonts.
 `apt-get install ffmpeg libcairo2 fonts-dejavu-core` / `brew install ffmpeg cairo`.
+
+If a request needs something the knobs don't cover (a different progression, more voices), copy the skill's
+`scripts/` and `assets/` into the user's project and edit the copy. An installed skill folder may be read-only, and
+other projects share it.
 
 ## When things look wrong
 - **"no copies found" / "convert it to absolute M/C/Z"**: the SVG isn't in the expected form; normalise it (step 1).

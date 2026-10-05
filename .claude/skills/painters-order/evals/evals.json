@@ -5,19 +5,49 @@
       "id": 1,
       "prompt": "here's my tessellation svg (canon/tessellation_15.svg). make me another painters order piece from it but shorter, like 30 seconds, and call it 'Short Walk'",
       "expected_output": "Runs the analysis, renders with PO_CYCLES=3 and PO_TITLE='Short Walk', reports the drift (-64.5 cents), the walk length (12 fifths) and the tile's odd-harmonic timbre; delivers film.mp4 (about 39 s) and the web organ.",
-      "files": ["canon/tessellation_15.svg"]
+      "files": [
+        "canon/tessellation_15.svg"
+      ],
+      "assertions": [
+        "film.mp4 exists and is between 25 and 45 seconds long",
+        "The title 'Short Walk' is used (PO_TITLE: it appears in web/organ_data.js)",
+        "score.json uses fewer than 6 cycles (the piece was actually shortened)",
+        "The reply states the comma drift and it matches score.json drift_cents to within 1 cent",
+        "The reply mentions the tile's odd-harmonic / clarinet-like timbre (true for this tile)",
+        "The web organ (web/index.html + web/organ_data.js) is delivered",
+        "The read-only skill folder is unchanged"
+      ]
     },
     {
       "id": 2,
       "prompt": "I drew a hexagon-ish tiling with 3 rotations in my tessellation app (evals/files/p3_hex.svg). Can you turn it into sound? I'd love something I can play in the browser too.",
       "expected_output": "Detects 3 classes on a 60-degree lattice, explains that voices reuse classes, renders the preview and full film, and hands over web/index.html as the playable organ.",
-      "files": ["evals/files/p3_hex.svg"]
+      "files": [
+        "evals/files/p3_hex.svg"
+      ],
+      "assertions": [
+        "analysis reports 3 orientation classes on a 60-degree lattice",
+        "The reply explains that with 3 classes one colour is shared by two voices",
+        "The reply does NOT claim odd-harmonics-only (this tile has even harmonics)",
+        "The web organ (web/index.html + web/organ_data.js) is delivered and the reply says how to play it",
+        "film.mp4 exists with an audio stream",
+        "The read-only skill folder is unchanged"
+      ]
     },
     {
       "id": 3,
       "prompt": "Make an oscilloscope music video from evals/files/p2_offset.svg where the chords drift upward instead of down.",
       "expected_output": "Uses references/variations.md (sharp pump: reverse the progression), edits music.py accordingly, confirms the drift is positive in score.json, and renders.",
-      "files": ["evals/files/p2_offset.svg"]
+      "files": [
+        "evals/files/p2_offset.svg"
+      ],
+      "assertions": [
+        "score.json drift_cents is positive (home rises)",
+        "Modified code lives outside the skill folder (outputs/code/) and the skill folder is unchanged",
+        "film.mp4 exists with an audio stream",
+        "The reply states how far the music drifts upward, consistent with score.json",
+        "analysis reports 2 orientation classes with a non-zero offset for the second class"
+      ]
     }
   ]
 }

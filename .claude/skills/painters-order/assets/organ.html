@@ -238,7 +238,7 @@
       ctx.strokeStyle = "#ffd166"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, 7, 0, 7); ctx.stroke();
       ctx.fillStyle = "#ffd166"; ctx.fillText(noteName(...hover), x + 10, y + 16);
     }
-    if (auto) statusEl.textContent = `comma pump · ${Math.max(0, t - auto.t0).toFixed(1)} s · home sinks ${Math.abs(O.drift)} cents`;
+    if (auto) statusEl.textContent = `comma pump · ${Math.max(0, t - auto.t0).toFixed(1)} s · home ${O.drift > 0 ? 'rises' : 'sinks'} ${Math.abs(O.drift)} cents`;
     requestAnimationFrame(frame);
   }
   resize(); requestAnimationFrame(frame);

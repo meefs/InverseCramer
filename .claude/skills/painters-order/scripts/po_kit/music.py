@@ -22,6 +22,9 @@ from po_kit import tess
 
 C_REF = float(os.environ.get("PO_CREF", 130.8128))  # C3 (equal-tempered reference for the opening C)
 CYCLES = int(os.environ.get("PO_CYCLES", 6))
+DIRECTION = os.environ.get("PO_DIRECTION", "down").lower()  # "down": the classic pump sinks; "up": reversed, it rises
+if DIRECTION not in ("down", "up"):
+    raise SystemExit("PO_DIRECTION must be 'down' or 'up'")
 CHORD_DUR = float(os.environ.get("PO_CHORD_DUR", 1.6))
 INTRO = [(0.0, 0), (2.0, 1), (2.5, 2), (3.0, 3)]   # (entry time, voice): bass alone, then the rest
 FIRST_CHANGE = 4.4
@@ -30,10 +33,21 @@ NAMES = ["bass", "tenor", "alto", "soprano"]
 ATTACK, RELEASE = 0.03, 0.30
 
 
+PROGRESSION = ["C", "Am", "Dm", "G"] if DIRECTION == "down" else ["C", "G", "Dm", "Am"]
+PUMP_STEP = (-4, 1) if DIRECTION == "down" else (4, -1)  # home's lattice move per round: 80/81 flat or 81/80 sharp
+
+
 def comma_pump(home):
     """Four chords of the pump starting from C at `home`; returns list of (root, [three sites])."""
     hi, hj = home
     S = lambda di, dj: (hi + di, hj + dj)
+    if DIRECTION == "up":  # the pump reversed: C - G - Dm - Am, every common tone held
+        return [
+            (S(0, 0), [S(0, 0), S(0, 1), S(1, 0)]),      # C  : C E G
+            (S(1, 0), [S(1, 0), S(1, 1), S(2, 0)]),      # G  : G B D   (G held)
+            (S(2, 0), [S(2, 0), S(3, -1), S(3, 0)]),     # Dm : D F A   (D held)
+            (S(3, 0), [S(3, 0), S(4, -1), S(4, 0)]),     # Am : A C E   (A held) - this C is a comma above the first
+        ]
     return [
         (S(0, 0), [S(0, 0), S(0, 1), S(1, 0)]),      # C  : C E G
         (S(-1, 1), [S(-1, 1), S(0, 0), S(0, 1)]),    # Am : A C E   (C, E held)
@@ -60,7 +74,10 @@ def _candidates(site, lo, hi):
 
 def voice_chords(chords):
     """Assign sites and octaves to the four voices with smooth, common-tone-preserving voice leading."""
-    prev = [C_REF / 2 * 1.0, C_REF * 1.5, C_REF * 2.5, C_REF * 4]  # loose starting registers
+    if DIRECTION == "down":
+        prev = [C_REF / 2 * 1.0, C_REF * 1.5, C_REF * 2.5, C_REF * 4]  # loose starting registers
+    else:  # close C2 E3 G3 C4: the rising pump's steady register, so no voice sags in the first round
+        prev = [C_REF / 2, C_REF * 1.25, C_REF * 1.5, C_REF * 2]
     out = []
     for root, sites in chords:
         bass = min(_candidates(root, *RANGES[0]), key=lambda f: abs(np.log2(f / prev[0])))
@@ -87,7 +104,7 @@ def build():
     home = (0, 0)
     for c in range(CYCLES):
         chords += comma_pump(home)
-        home = (home[0] - 4, home[1] + 1)
+        home = (home[0] + PUMP_STEP[0], home[1] + PUMP_STEP[1])
     chords.append((home, [home, (home[0], home[1] + 1), (home[0] + 1, home[1])]))  # the final C, drifted
     voiced = voice_chords(chords)
 
@@ -113,13 +130,13 @@ def build():
     ghost_notes = [dict(t0=ghost[0] + 0.07 * v, t1=ghost[1], site=list(site), freq=f, voice=v)
                    for v, (site, f) in enumerate(voiced[0])]
     c = 1200 * np.log2(ratio(home))
-    cents = c - 1200 * round(c / 1200)  # pitch-class drift of "home": six syntonic commas flat
+    cents = c - 1200 * round(c / 1200)  # pitch-class drift of "home": CYCLES syntonic commas flat (down) or sharp (up)
     # coda: when the painting is revealed the drifted chord is struck once more, rolled upward
     reveal = final_end + 1.0
     coda = [dict(t0=reveal + 0.22 * v, t1=reveal + 5.0, site=list(site), freq=f, voice=v)
             for v, (site, f) in enumerate(voiced[-1])]
     return dict(voices=voices, ghost=ghost_notes, coda=coda, reveal=reveal, final_start=final_start, final_end=final_end,
-                ghost_span=ghost, drift_cents=float(cents), home_final=list(home), cycles=CYCLES,
+                ghost_span=ghost, drift_cents=float(cents), direction=DIRECTION, progression=PROGRESSION, home_final=list(home), cycles=CYCLES,
                 chord_times=times, duration=final_end + 9.0)
 
 

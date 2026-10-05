@@ -298,8 +298,10 @@ class Film:
               os.environ.get("PO_SUBTITLE", "a comma-pump chorale for four beams")], 0.4, 4.6, 140, [64, 24])
         d = self.s["drift_cents"]
         n = self.s["cycles"]
-        card([f"{n} times round C, Am, Dm, G, in just intonation, every common tone held.",
-              f"Home sank {n} syntonic commas ({d:.0f} cents) and walked {abs(self.s['home_final'][0])} fifths across the tiles.",
+        verb = "rose" if d > 0 else "sank"
+        prog = ", ".join(self.s.get("progression", ["C", "Am", "Dm", "G"]))
+        card([f"{n} times round {prog}, in just intonation, every common tone held.",
+              f"Home {verb} {n} syntonic commas ({d:+.0f} cents) and walked {abs(self.s['home_final'][0])} fifths across the tiles.",
               "Every sound you heard was a tile, traced by a beam."],
              self.s["reveal"] + 1.2, self.s["duration"] - 0.2, H - 150, [26, 26, 26], backing=True)
 

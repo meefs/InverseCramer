@@ -1,0 +1,22 @@
+[
+ {"query": "ok so I exported a new tiling from my tessellation app (~/Desktop/tiles/kite_dart_7.svg), every tile is the same path with a matrix() transform. can you make it into music like that oscilloscope chorale thing you did before?", "should_trigger": true},
+ {"query": "Can you sonify this tessellation? tessellation_22.svg in the repo root. I want to hear what the tile shape sounds like and ideally get a short video", "should_trigger": true},
+ {"query": "make another painters order but from canon/birds_v3.svg, call it Night Flight and make it a bit longer, maybe 8 rounds", "should_trigger": true},
+ {"query": "I want a vectorscope / XY oscilloscope music video where the beam draws the tiles of my pinwheel tiling (pinwheel.svg). Left channel X right channel Y.", "should_trigger": true},
+ {"query": "for my xenharmonic class I need a visual demo of the syntonic comma drifting when you play I-vi-ii-V-I in just intonation, ideally walking across a lattice made from one of my tessellations (lattice_hex.svg)", "should_trigger": true},
+ {"query": "turn my escher-style lizard tiling into a little animated piece with sound where the tiles light up as the music plays them. file is lizards_p3.svg", "should_trigger": true},
+ {"query": "can you build a browser instrument from this tiling svg where clicking each tile plays a note and the sound is the tile's outline as a waveform?", "should_trigger": true},
+ {"query": "my students made tessellations in Inkscape (one prototile + matrix transforms per copy). I want each one to become a 40 second audiovisual clip for our end-of-term show. start with group3.svg", "should_trigger": true},
+ {"query": "what would my tessellation sound like if the lattice was a tonnetz? tiles_hexagon_final.svg - render it", "should_trigger": true},
+ {"query": "redo the comma pump film from tessellation_15.svg but have the music rise instead of sink and title it Ascent", "should_trigger": true},
+ {"query": "can you make a magic eye stereogram from my tessellation svg that hides a dolphin? 1080p, wall-eyed", "should_trigger": false},
+ {"query": "generate a new p4 tessellation SVG for me with a bird-shaped tile, 4 rotations, purple and green palette", "should_trigger": false},
+ {"query": "explain the syntonic comma and why I-vi-ii-V-I drifts in just intonation, with the math. no code needed", "should_trigger": false},
+ {"query": "write a scala .scl file for 5-limit just intonation on C and tell me how to load it in Ableton", "should_trigger": false},
+ {"query": "I have an mp3 of my band, can you make an oscilloscope-style visualizer video for it? audio reactive waveform in green on black", "should_trigger": false},
+ {"query": "convert this tessellation svg into a 3D printable STL with 2mm extrusion per tile", "should_trigger": false},
+ {"query": "my tessellation SVG is 25 MB and loads slowly on github pages, can you optimize it (dedupe the paths into <use> elements)?", "should_trigger": false},
+ {"query": "compose a Tchaikovsky-style string quartet miniature in B minor and render it to wav with a numpy synth", "should_trigger": false},
+ {"query": "animate my tessellation svg so the tiles slowly rotate and change colour, as a looping gif for instagram, no sound", "should_trigger": false},
+ {"query": "plot a Tonnetz diagram (neo-Riemannian, triangular) as a clean SVG with note names for a music theory handout", "should_trigger": false}
+]
