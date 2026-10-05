@@ -1,0 +1,115 @@
+<title>Flock Magic Eye</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+/* Layout: a narrow control column of plain words above one huge pixel-exact canvas, which scrolls in its own box. */
+:root {
+  --bg: #f3f1f7; --panel: #ffffff; --fg: #24182e; --muted: #6b5d78;
+  --purple: #a24bd5; --green: #3f9a2b; --line: #ddd5e6;
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #16111b; --panel: #211a29; --fg: #efe8f6; --muted: #a596b3; --purple: #c58af0; --green: #8fe36a; --line: #382c44; color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #16111b; --panel: #211a29; --fg: #efe8f6; --muted: #a596b3; --purple: #c58af0; --green: #8fe36a; --line: #382c44; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font: 16px/1.55 var(--body); padding: 24px 20px 40px; }
+.wrap { max-width: 1960px; margin: 0 auto; display: grid; gap: 18px; }
+header { display: grid; gap: 6px; max-width: 70ch; }
+h1 { font: 800 clamp(2.2rem, 5vw, 3.6rem)/1 var(--display); margin: 0; letter-spacing: -0.02em; text-wrap: balance; }
+h1 span { background: linear-gradient(90deg, var(--purple), var(--green)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+header p { margin: 0; color: var(--muted); }
+.controls { display: flex; flex-wrap: wrap; gap: 14px 28px; align-items: center; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+.controls label { display: flex; gap: 10px; align-items: center; font-weight: 700; }
+.controls output, .note { font: 13px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+input[type=range] { width: min(260px, 50vw); accent-color: var(--purple); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button, .btn { font: 700 14px var(--body); border: 0; padding: 8px 14px; background: transparent; color: var(--fg); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--purple); color: #fff; }
+.btn { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.btn:active, .btn.on { background: var(--green); color: #102008; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; }
+.stage { overflow: auto; border-radius: 6px; border: 1px solid var(--line); background: #000; max-width: 100%; }
+canvas { display: block; image-rendering: pixelated; }
+.how { display: grid; gap: 6px; max-width: 70ch; color: var(--muted); font-size: 15px; }
+.how strong { color: var(--fg); }
+@media (max-width: 600px) { body { padding-inline: 16px; } }
+</style>
+<div class="wrap">
+  <header>
+    <h1><span>Flock</span>, a Magic Eye</h1>
+    <p>Tessellation 15, warped around a hidden gull. Relax your eyes and look past the screen.</p>
+  </header>
+  <div class="controls">
+    <label for="period">Repeat <input id="period" type="range" min="110" max="210" step="2" value="150"> <output id="pout">150 px</output></label>
+    <div class="seg" role="group" aria-label="Viewing method">
+      <button id="wall" aria-pressed="true">Wall-eyed</button><button id="cross" aria-pressed="false">Cross-eyed</button>
+    </div>
+    <button class="btn" id="peek">Hold to peek</button>
+    <label for="fit"><input id="fit" type="checkbox"> Fit to window</label>
+    <span class="note" id="mm"></span>
+  </div>
+  <div class="stage" id="stage"><canvas id="cv" width="1920" height="1080"></canvas></div>
+  <div class="how">
+    <p><strong>How to see it.</strong> Leave "Fit to window" off so one image pixel is one screen pixel. Sit about an arm's length away, look at the two dots, and let your focus drift behind the screen until they become three. Hold that, then look around: a gull with its wings spread floats toward you.</p>
+    <p><strong>Choosing the repeat.</strong> If it strains, make the repeat smaller. Most people are comfortable at 35 to 50 mm on screen. On a 24-inch 1080p monitor, 150 px is about 42 mm.</p>
+  </div>
+</div>
+<script>
+const CELL_SRC = "__CELL__", DEPTH_SRC = "__DEPTH__";
+const W = 1920, H = 1080, MU = 1 / 3, MM_PER_PX = 0.2767;
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+let cell, cellN, depth, P = 150, cross = false, peeking = false;
+
+function load(src) { return new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = src; }); }
+function pixels(img) { const c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
+  const x = c.getContext("2d"); x.drawImage(img, 0, 0); return x.getImageData(0, 0, img.width, img.height).data; }
+
+function render() {
+  const out = ctx.createImageData(W, H), o = out.data, u = new Float64Array(W), E = 2 * P, k = cellN / P;
+  for (let y = 0; y < H; y++) {
+    const row = y * W, cy = ((y % P) * k) | 0, cyi = cy * cellN;
+    for (let x = 0; x < W; x++) {
+      if (x < P) { u[x] = x; } else {
+        let z = depth[(row + x) * 4] / 255; if (cross) z = 1 - z;
+        const s = E * (1 - MU * z) / (2 - MU * z), src = x - s, i0 = Math.floor(src), f = src - i0;
+        u[x] = (1 - f) * u[i0] + f * u[i0 + 1] + P;
+      }
+      const fx = ((u[x] % P) + P) % P * k, x0 = fx | 0, a = fx - x0, x1 = (x0 + 1) % cellN;
+      const p0 = (cyi + x0) * 4, p1 = (cyi + x1) * 4, q = (row + x) * 4;
+      o[q] = cell[p0] * (1 - a) + cell[p1] * a; o[q + 1] = cell[p0 + 1] * (1 - a) + cell[p1 + 1] * a;
+      o[q + 2] = cell[p0 + 2] * (1 - a) + cell[p1 + 2] * a; o[q + 3] = 255;
+    }
+  }
+  ctx.putImageData(out, 0, 0);
+  ctx.fillStyle = "#fff";
+  for (const dx of [-P / 2, P / 2]) { ctx.beginPath(); ctx.arc(W / 2 + dx, 34, 12, 0, 7); ctx.fill(); }
+  ctx.fillStyle = "#140a1c";
+  for (const dx of [-P / 2, P / 2]) { ctx.beginPath(); ctx.arc(W / 2 + dx, 34, 8, 0, 7); ctx.fill(); }
+}
+function showDepth() {
+  const out = ctx.createImageData(W, H), o = out.data;
+  for (let i = 0; i < W * H * 4; i += 4) { const z = depth[i] / 255; o[i] = 40 + 160 * z; o[i + 1] = 20 + 200 * z; o[i + 2] = 60 + 150 * z; o[i + 3] = 255; }
+  ctx.putImageData(out, 0, 0);
+}
+function size() {
+  const fit = document.getElementById("fit").checked;
+  cv.style.width = fit ? "100%" : (W / (window.devicePixelRatio || 1)) + "px";
+  document.getElementById("mm").textContent = "≈ " + (P * MM_PER_PX).toFixed(0) + " mm on a 24-inch 1080p screen" + (fit ? " (scaled: depth will be off)" : "");
+}
+function update() { document.getElementById("pout").textContent = P + " px"; size(); peeking ? showDepth() : render(); }
+
+document.getElementById("period").addEventListener("input", e => { P = +e.target.value; update(); });
+for (const id of ["wall", "cross"]) document.getElementById(id).addEventListener("click", () => {
+  cross = id === "cross"; document.getElementById("wall").setAttribute("aria-pressed", !cross);
+  document.getElementById("cross").setAttribute("aria-pressed", cross); update(); });
+const peek = document.getElementById("peek");
+const on = e => { e.preventDefault(); peeking = true; peek.classList.add("on"); showDepth(); };
+const off = () => { if (!peeking) return; peeking = false; peek.classList.remove("on"); render(); };
+peek.addEventListener("pointerdown", on); window.addEventListener("pointerup", off); peek.addEventListener("pointerleave", off);
+peek.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter") on(e); });
+peek.addEventListener("keyup", off);
+document.getElementById("fit").addEventListener("change", size);
+window.addEventListener("resize", size);
+
+Promise.all([load(CELL_SRC), load(DEPTH_SRC)]).then(([c, d]) => { cellN = c.width; cell = pixels(c); depth = pixels(d); update(); });
+</script>
