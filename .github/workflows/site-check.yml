@@ -17,7 +17,10 @@ jobs:
         run: |
           gh api repos/${{ github.repository }}/pages || echo "Pages is not enabled for this repository"
       - name: Fetch the site
+        env: { GH_TOKEN: "${{ github.token }}" }
         run: |
+          base=$(gh api repos/${{ github.repository }}/pages --jq .html_url)
+          echo "site: $base"
           for path in "" organ.html organ_data.js flock-viewer.html media/flock.mp4 media/painters-order.mp4 preview.jpg; do
-            printf '%-26s ' "/$path"; curl -s -o /dev/null -w '%{http_code} %{size_download}B\n' -r 0-1023 "https://meefs.github.io/InverseCramer/$path"
+            printf '%-26s ' "/$path"; curl -s -o /dev/null -w '%{http_code} %{size_download}B\n' -r 0-1023 "${base}${path}"
           done

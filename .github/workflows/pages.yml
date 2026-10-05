@@ -1,5 +1,5 @@
 name: pages
-# Syncs site/ to the gh-pages branch, which GitHub Pages serves at https://meefs.github.io/InverseCramer/
+# Syncs site/ to the gh-pages branch, which GitHub Pages serves at https://<owner>.github.io/<repo>/
 on:
   workflow_dispatch:
   push:
@@ -22,7 +22,11 @@ jobs:
           wt="$RUNNER_TEMP/gh-pages"
           git worktree add -q -B gh-pages "$wt" origin/gh-pages
           rsync -a --delete --exclude .git site/ "$wt/"
+          # fill in this repo's own name and Pages address, so a repo rename needs no edits in site/
+          repo="${GITHUB_REPOSITORY}"; owner="${repo%%/*}"; name="${repo#*/}"
+          pages="https://${owner,,}.github.io/${name}/"
+          grep -rl --include='*.html' -e '__PAGES_URL__' -e '__REPO__' "$wt" | xargs -r sed -i "s|__PAGES_URL__|${pages}|g; s|__REPO__|${repo}|g"
           git -C "$wt" add -A
           git -C "$wt" commit -qm "site from ${GITHUB_SHA::7}" || { echo "site unchanged"; exit 0; }
           git -C "$wt" push -q origin gh-pages
-          echo "Published https://meefs.github.io/InverseCramer/"
+          echo "Published ${pages}"
