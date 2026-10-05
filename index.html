@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en" data-size="m">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Inverse Cramer</title>
+<meta name="description" content="Two films and an instrument made from one tessellation: a Magic Eye of paper swifts hiding a gull, and a chorale played by tracing the tile with an oscilloscope beam.">
+<meta name="theme-color" content="#14110d">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Inverse Cramer">
+<meta property="og:title" content="Inverse Cramer">
+<meta property="og:description" content="Tessellation 15 as a Magic Eye, an oscilloscope chorale, and a playable tile organ.">
+<meta property="og:url" content="https://meefs.github.io/InverseCramer/">
+<meta property="og:image" content="https://meefs.github.io/InverseCramer/preview.jpg">
+<meta property="og:image:width" content="1085">
+<meta property="og:image:height" content="610">
+<meta property="og:image:alt" content="A glowing purple and green tessellation with a vivid band where the music walked.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Inverse Cramer">
+<meta name="twitter:description" content="Tessellation 15 as a Magic Eye, an oscilloscope chorale, and a playable tile organ.">
+<meta name="twitter:image" content="https://meefs.github.io/InverseCramer/preview.jpg">
+<style>
+  :root{--bg:#14110d;--panel:#1d1913;--ink:#ede4d3;--muted:#a89b86;--line:#33291c;--gold:#ffd166;
+    --violet:#a24bd5;--green:#83e049;--fs:17px}
+  [data-size="s"]{--fs:15px}
+  [data-size="l"]{--fs:20px}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:var(--fs)/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:1120px;margin:0 auto;padding:clamp(64px,8vw,84px) 24px 96px}
+  h1{font-size:min(2.25em,8.5vw);margin:0 0 10px;letter-spacing:.4px;line-height:1.05}
+  h1 span{background:linear-gradient(90deg,var(--violet),var(--green));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);font-size:1.05em;margin:0 0 30px;max-width:62ch}
+
+  .ghlink{position:fixed;top:16px;left:16px;z-index:20;display:flex;align-items:center;gap:8px;
+    background:rgba(0,0,0,.55);border:1px solid var(--line);border-radius:30px;padding:7px 14px 7px 11px;
+    color:var(--ink);text-decoration:none;font:600 .82em/1 ui-monospace,Menlo,Consolas,monospace;
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:color .15s,border-color .15s}
+  .ghlink:hover{color:var(--gold);border-color:var(--gold)}
+  .ghlink svg{flex-shrink:0;display:block}
+  @media(max-width:560px){.ghlink span{display:none}}
+
+  .sizer{position:fixed;top:16px;right:16px;z-index:20;display:flex;gap:3px;
+    background:rgba(0,0,0,.55);border:1px solid var(--line);border-radius:30px;padding:5px 7px;
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  .sizer button{min-width:32px;height:32px;border:0;border-radius:9px;background:transparent;
+    color:var(--muted);font-family:ui-monospace,Menlo,monospace;font-weight:700;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;line-height:1;transition:background .15s,color .15s}
+  .sizer button.on{color:var(--bg);background:var(--gold)}
+  .sizer button:hover:not(.on){color:var(--ink)}
+  button:focus-visible,a:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+  .legend{display:flex;flex-wrap:wrap;gap:.6em;margin:0 0 44px}
+  .key{border:1px solid var(--line);border-radius:10px;padding:.62em .9em;background:var(--panel);
+    font:.95em/1 ui-monospace,Menlo,Consolas,monospace;color:var(--ink)}
+  .key b{color:var(--gold);font-weight:700;margin-right:.25em}
+
+  .grid{display:grid;grid-template-columns:1fr;gap:36px}
+  @media(min-width:820px){.grid{grid-template-columns:1fr 1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;min-width:0}
+  .frame{position:relative;aspect-ratio:16/9;background:#0e0714}
+  .frame iframe,.frame video,.frame img{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;object-fit:cover}
+  .poster{position:absolute;inset:0;display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;cursor:pointer}
+  .poster img{filter:brightness(.55)}
+  .poster button{position:relative;font:600 .95em ui-sans-serif,system-ui,sans-serif;padding:11px 18px;border-radius:10px;border:0;
+    background:var(--gold);color:#1a1408;cursor:pointer}
+  .meta{padding:16px 18px 20px}
+  .meta h2{margin:0 0 4px;font-size:1.2em}
+  .meta p{margin:0 0 12px;color:var(--muted);font-size:.88em}
+  .open{display:inline-block;color:var(--gold);text-decoration:none;font-weight:600;font-size:.88em;margin-right:16px}
+  .open:hover{text-decoration:underline}
+  .tip{margin:38px 0 0;color:var(--muted);font-size:.85em}
+
+  .notes{margin-top:56px;border-top:1px solid var(--line);padding-top:30px;display:grid;gap:18px}
+  .notes h2{margin:0;font-size:1.25em}
+  .notes p{margin:0;color:var(--muted);font-size:.95em;max-width:68ch}
+  .notes strong{color:var(--ink)}
+  .tbl{overflow-x:auto}
+  table{border-collapse:collapse;font-size:.88em;min-width:460px}
+  th,td{text-align:left;padding:.5em .9em;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+  th{color:var(--gold);font-weight:600}
+  td{color:var(--ink)}
+  code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9em}
+</style>
+</head>
+<body>
+  <a class="ghlink" href="https://github.com/meefs/InverseCramer" target="_blank" rel="noopener" title="View this project on GitHub">
+    <svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.930-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+    <span>meefs/InverseCramer</span>
+  </a>
+
+  <div class="sizer" role="group" aria-label="Text size">
+    <button data-size="s" title="Smaller text"><span style="font-size:.7em">A</span></button>
+    <button data-size="m" class="on" title="Default text"><span style="font-size:.9em">A</span></button>
+    <button data-size="l" title="Larger text"><span style="font-size:1.1em">A</span></button>
+  </div>
+
+  <div class="wrap">
+    <h1><span>Inverse Cramer</span></h1>
+    <p class="sub">Two films and an instrument made from one tessellation. Its tile is a twisted ribbon in four rotations,
+      and here it becomes a flock of paper swifts, a hidden gull, and a voice. Best viewed on a desktop browser, with sound.</p>
+
+    <div class="legend" aria-label="Tile organ controls">
+      <span class="key"><b>click</b> play a pitch</span>
+      <span class="key"><b>shift-click</b> hold</span>
+      <span class="key"><b>Space</b> comma pump</span>
+      <span class="key"><b>arrows</b> pan</span>
+      <span class="key"><b>wheel</b> zoom</span>
+      <span class="key"><b>X</b> clear</span>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="frame"><video controls preload="metadata" poster="media/flock-poster.jpg" src="media/flock.mp4"></video></div>
+        <div class="meta">
+          <h2>Flock</h2>
+          <p>42&nbsp;s. Paper swifts flutter in and land as a Magic Eye. Relax your eyes during the hold and a gull
+            with spread wings floats out of the screen, then beats its wings. Original score in B minor, after Tchaikovsky.</p>
+          <a class="open" href="media/flock.mp4" target="_blank" rel="noopener">Open fullscreen &#8599;</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="frame"><video controls preload="metadata" poster="media/painters-order-poster.jpg" src="media/painters-order.mp4"></video></div>
+        <div class="meta">
+          <h2>Painter's Order</h2>
+          <p>58&nbsp;s. Four oscilloscope beams trace the tile as sound. A just-intonation comma pump sinks six commas
+            and walks the chorale across the tiles, and then the tiling is painted in the order the music reached it.</p>
+          <a class="open" href="media/painters-order.mp4" target="_blank" rel="noopener">Open fullscreen &#8599;</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="frame"><iframe src="organ.html" title="Tile organ" loading="lazy"></iframe></div>
+        <div class="meta">
+          <h2>Tile organ</h2>
+          <p>Live. Every dot on the lattice is a pitch: a fifth to the right, a major third up the slope. Each voice is
+            the tile outline traced as a waveform. Click to play, or press Space for the comma pump.</p>
+          <a class="open" href="organ.html" target="_blank" rel="noopener">Open fullscreen &#8599;</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="frame" id="fv">
+          <div class="poster" id="pv">
+            <img src="media/flock-still.jpg" alt="The Flock stereogram: purple and green tiles warped around a hidden gull">
+            <button type="button">Load live Magic Eye</button>
+          </div>
+        </div>
+        <div class="meta">
+          <h2>Magic Eye viewer</h2>
+          <p>Live. The stereogram is rebuilt in your browser. Open it fullscreen so one image pixel is one screen pixel,
+            set the repeat for your monitor, and switch to cross-eyed if that's how you see them.</p>
+          <a class="open" href="flock-viewer.html" target="_blank" rel="noopener">Open fullscreen &#8599;</a>
+        </div>
+      </div>
+    </div>
+
+    <p class="tip">Tip: click the tile organ once to give it keyboard focus and start its sound. Browsers only allow
+      audio after a click.</p>
+
+    <div class="notes">
+      <h2>How they were made</h2>
+      <p>Everything starts from one SVG: a single tile in four 90&deg; rotations on a square lattice tilted 22&deg;. The
+        tile's outline <strong>crosses itself</strong>, so neighbouring tiles overlap and the drawing order decides what you
+        see. Traced as a waveform, the outline has only <strong>odd harmonics</strong>, like a clarinet.</p>
+      <p>Both films are rendered by Python scripts (NumPy, Cairo, ffmpeg), with no samples and no AI image generation.
+        Each was rendered twice, in a Claude cloud container and entirely in GitHub Actions. The stereogram, the depth
+        map and both soundtracks came out byte-identical.</p>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Render</th><th>Cloud container</th><th>GitHub Actions</th></tr></thead>
+          <tbody>
+            <tr><td>Flock</td><td>2 min 51 s</td><td>3 min 47 s</td></tr>
+            <tr><td>Painter's Order</td><td>6 min 24 s</td><td>4 min 34 s</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      var html=document.documentElement, K='ic-size';
+      function apply(s){
+        html.setAttribute('data-size',s);
+        document.querySelectorAll('.sizer button').forEach(function(b){ b.classList.toggle('on', b.dataset.size===s); });
+        try{ localStorage.setItem(K,s); }catch(e){}
+      }
+      var saved; try{ saved=localStorage.getItem(K); }catch(e){}
+      apply(saved||'m');
+      document.querySelectorAll('.sizer button').forEach(function(b){ b.addEventListener('click', function(){ apply(b.dataset.size); }); });
+    })();
+    document.getElementById('pv').addEventListener('click', function () {
+      document.getElementById('fv').innerHTML = '<iframe src="flock-viewer.html" title="Magic Eye viewer"></iframe>';
+    });
+  </script>
+</body>
+</html>
