@@ -1,0 +1,22 @@
+{
+  "fps": 24,
+  "frames": 48,
+  "resolution": [480, 270],
+  "samples": 16,
+  "seed": 7,
+  "output": "bounce.mp4",
+  "objects": [
+    {"name": "Ground", "type": "plane", "size": 10, "color": [0.75, 0.75, 0.75, 1]},
+    {"name": "Ball", "type": "sphere", "radius": 0.6, "location": [0, 0, 3], "color": [0.9, 0.35, 0.18, 1],
+     "interp": "BEZIER",
+     "keys": [
+       {"frame": 1,  "location": [-2.5, 0, 3.0], "rotation_deg": [0, 0, 0]},
+       {"frame": 12, "location": [0, 0, 0.6],    "rotation_deg": [0, 90, 0]},
+       {"frame": 24, "location": [2.5, 0, 3.0],  "rotation_deg": [0, 180, 0]},
+       {"frame": 36, "location": [0, 0, 0.6],    "rotation_deg": [0, 270, 0]},
+       {"frame": 48, "location": [-2.5, 0, 3.0], "rotation_deg": [0, 360, 0]}
+     ]}
+  ],
+  "camera": {"location": [6, -8, 4], "rotation_deg": [65, 0, 37]},
+  "light": {"type": "SUN", "location": [4, -4, 8], "energy": 3.0}
+}
